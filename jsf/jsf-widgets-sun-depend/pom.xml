@@ -49,7 +49,7 @@
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.myfaces.tomahawk</groupId>
-                    <artifactId>tomahawk</artifactId>
+                    <artifactId>tomahawk21</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.myfaces.core</groupId>

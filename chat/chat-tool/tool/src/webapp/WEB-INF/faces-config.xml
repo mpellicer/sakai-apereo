@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<!DOCTYPE faces-config PUBLIC
-  "-//Sun Microsystems, Inc.//DTD JavaServer Faces Config 1.0//EN"
-  "dtd/web-facesconfig_1_0.dtd">
-
-<faces-config>
+<faces-config
+    xmlns="http://java.sun.com/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-facesconfig_2_0.xsd"
+    version="2.0">
 
   <application>
     <message-bundle>chat</message-bundle>
@@ -109,9 +109,7 @@
       <redirect/>
     </navigation-case>
   </navigation-rule>
-  
-   
-  
+
 	<managed-bean>
 		<description>
 			Dynamic Resource Bundle Loader
@@ -125,6 +123,5 @@
 			<value>chat</value>
 		</managed-property>
 	</managed-bean>
-  
 
 </faces-config>
