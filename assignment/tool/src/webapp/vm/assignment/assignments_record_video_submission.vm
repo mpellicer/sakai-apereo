@@ -1,0 +1,93 @@
+<!-- start: assignments_record_video_submission.vm  -->
+#if ($submissionType == 7)
+    <script src="/library/webjars/recordrtc/5.6.2/RecordRTC.js"></script>
+    <script src="/library/webjars/webrtc-adapter/8.0.0/out/adapter.js"></script>
+
+    <div class="videoRecorder">
+        <input type="hidden" name="videoResponse" id="videoResponse" value="" />
+
+        <input type="button" class="button" id="btn-start-recording" value="$tlang.getString("stuviewsubm.start.recording")"/>
+        <input type="button" class="button" id="btn-stop-recording" value="$tlang.getString("stuviewsubm.stop.recording")" disabled/>
+
+        <br><br>
+
+        <video style="display:none" id="submission-recorder" controls autoplay playsinline></video>
+
+    </div>
+
+    <script>
+        let recorder;
+        let player = document.getElementById('submission-recorder');
+        function captureCamera(callback) {
+            navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function(camera) {
+                callback(camera);
+            }).catch(function(error) {
+                alert('Unable to capture your camera. Please check console logs.');
+                console.error(error);
+            });
+        }
+        function stopRecordingCallback() {
+            player.src = player.srcObject = null;
+            player.muted = false;
+            player.volume = 1;
+            player.src = URL.createObjectURL(recorder.getBlob());
+
+            // TODO: Ideally we want a different mechanism to send the file to the backend as it's sent by a classic form post.
+            let fileObject = new File([recorder.getBlob()], "video.webm", {type: 'video/webm'});
+            getBase64(fileObject).then(
+              data => document.getElementById('videoResponse').value = data
+            );
+
+            recorder.camera.stop();
+            recorder.destroy();
+            recorder = null;
+        }
+
+        document.getElementById('btn-start-recording').onclick = function() {
+            player.style.display = 'block';
+            let submissionPlayers = document.querySelectorAll('#submission-player');
+            if (submissionPlayers) {
+                submissionPlayers.forEach(submissionPlayer => submissionPlayer.style.display = 'none');
+            }
+            this.disabled = true;
+            captureCamera(async function(camera) {
+                player.muted = true;
+                player.volume = 0;
+                player.srcObject = camera;
+                recorder = RecordRTC(camera, {
+                    type: 'video'
+                });
+                recorder.startRecording();
+                // release camera on stopRecording
+                recorder.camera = camera;
+                document.getElementById('btn-stop-recording').disabled = false;
+
+                // Important: The default Sakai file size is 20MB so by default is recording around 2:30 of video, increase this value if your instance allows bigger files.
+                // TODO: Could be interesting to calculate this depending on the server side property content.upload.max, maybe as future improvement.
+                const sleep = m => new Promise(r => setTimeout(r, m));
+                await sleep(150000);
+
+                document.getElementById('btn-stop-recording').disabled = true;
+                recorder.stopRecording(stopRecordingCallback);
+                document.getElementById('btn-start-recording').disabled = false;
+
+            });
+        };
+        document.getElementById('btn-stop-recording').onclick = function() {
+            this.disabled = true;
+            recorder.stopRecording(stopRecordingCallback);
+            document.getElementById('btn-start-recording').disabled = false;
+        };
+
+        function getBase64(file) {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+          });
+        }
+
+    </script>
+#end
+<!-- end: assignments_record_video_submission.vm  -->

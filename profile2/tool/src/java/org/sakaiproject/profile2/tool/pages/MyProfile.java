@@ -604,8 +604,8 @@ public class MyProfile extends BasePage {
 	@Override
 	public void renderHead(IHeaderResponse response) {
 		super.renderHead(response);
-		response.render(JavaScriptHeaderItem.forUrl("/library/webjars/recordrtc/5.5.8/RecordRTC.js"));
-		response.render(JavaScriptHeaderItem.forUrl("/library/webjars/webrtc-adapter/7.5.0/out/adapter.js"));
+		response.render(JavaScriptHeaderItem.forUrl("/library/webjars/recordrtc/5.6.2/RecordRTC.js"));
+		response.render(JavaScriptHeaderItem.forUrl("/library/webjars/webrtc-adapter/8.0.0/out/adapter.js"));
 	}
 
 	private boolean locked;
