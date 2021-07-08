@@ -3,7 +3,7 @@
   <div class="page-header">
     <h1>$tlang.getString("tool_title")</h1>
     <div class="sakai-sideHeading">
-      <a href="$printableVersionUrl" title="$!tlang.getString('java.print')" target="_blank" rel="noreferrer">$!tlang.getString('java.print')</a>
+      <a onclick="printCalendar()" title="$!tlang.getString('java.print')" href="#">$!tlang.getString('java.print')</a>
     </div>
   </div>
   #if ($alertMessage)<div class="sak-banner-warn">$tlang.getString('gen.alert') $formattedText.escapeHtml($alertMessage)</div>#end
@@ -56,4 +56,122 @@
     }
   }
   document.querySelectorAll('.fc-timeGridWeek-button, .fc-dayGridMonth-button, .fc-timeGridDay-button, .fc-listWeek-button').forEach(viewButton => viewButton.setAttribute('onclick', 'setDefaultView();'));
+</script>
+
+<script>
+
+  formatDateForRange = (date) => {
+    const hours = date.getHours() === 0 ? '00' : date.getHours();
+    const minutes = date.getMinutes() === 0 ? '00' : date.getMinutes();
+    const seconds = date.getSeconds() === 0 ? '00' : date.getSeconds();
+    let month = date.getMonth() + 1;
+    const monthString = month < 10 ? '0' + month : ''+month;
+    const dayString = date.getDate() < 10 ? '0' + date.getDate() : ''+date.getDate();
+    return `${date.getFullYear()}${monthString}${dayString}${hours}${minutes}${seconds}000`;
+  }
+
+  printCalendar = () => {
+
+    const currentSelectedDate = calendar.currentData.currentDate;
+    const currentView = calendar.currentData.currentViewType.toLowerCase();
+
+    /** Calendar Printing Views. */
+    // DAY_VIEW = 0;
+    // WEEK_VIEW = 2;
+    // MONTH_VIEW = 3;
+    // LIST_VIEW = 5;
+    // Week is the default subview
+    let currentPrintview = 2;
+    let currentTimeRange = '';
+
+    // Set the selected day from 00:00 to 23:59
+    const startDate = currentSelectedDate;
+    const endDate = currentSelectedDate;
+    startDate.setHours(0);
+    startDate.setMinutes(0);
+    startDate.setSeconds(0);
+    const startDateFormatted = formatDateForRange(startDate);
+    endDate.setHours(23);
+    endDate.setMinutes(59);
+    endDate.setSeconds(59);
+    const endDateFormatted = formatDateForRange(endDate);
+    let dailyStartTime = startDateFormatted + '-' + endDateFormatted;
+
+    // Different views have different time ranges
+    if (currentView.includes('list')) {
+        currentPrintview = 5;
+        // Set the selected week from Sunday@00:00 to Monday@23:59
+        const startListDate = currentSelectedDate;
+        const endListDate = currentSelectedDate;
+        startListDate.setDate(startListDate.getDate() - startListDate.getDay());
+        startListDate.setHours(0);
+        startListDate.setMinutes(0);
+        startListDate.setSeconds(0);
+        const startListDateFormatted = formatDateForRange(startListDate);
+        endListDate.setDate(startListDate.getDate() + 6);
+        endListDate.setHours(23);
+        endListDate.setMinutes(59);
+        endListDate.setSeconds(59);
+        const endListDateFormatted = formatDateForRange(endListDate);
+        currentTimeRange =  startListDateFormatted + '-' + endListDateFormatted;
+    } else if (currentView.includes('month')) {
+        currentPrintview = 3;
+        // Set the selected month from the 1st@00:00 to the last@23:59
+        const startMonthDate = currentSelectedDate;
+        const endMonthDate = currentSelectedDate;
+        startMonthDate.setDate(1);
+        startMonthDate.setHours(0);
+        startMonthDate.setMinutes(0);
+        startMonthDate.setSeconds(0);
+        const startMonthDateFormatted = formatDateForRange(startMonthDate);
+        endMonthDate.setDate(31);
+        endMonthDate.setHours(23);
+        endMonthDate.setMinutes(59);
+        endMonthDate.setSeconds(59);
+        const endMonthDateFormatted = formatDateForRange(endMonthDate);
+        currentTimeRange =  startMonthDateFormatted + '-' + endMonthDateFormatted;
+    } else if (currentView.includes('day')) {
+        currentPrintview = 0;
+        currentTimeRange = dailyStartTime;
+    } else if (currentView.includes('week')) {
+        currentPrintview = 2;
+        // Set the selected week from Sunday@00:00 to Monday@23:59
+        const startWeekDate = currentSelectedDate;
+        const endWeekDate = currentSelectedDate;
+        startWeekDate.setDate(startWeekDate.getDate() - startWeekDate.getDay());
+        startWeekDate.setHours(0);
+        startWeekDate.setMinutes(0);
+        startWeekDate.setSeconds(0);
+        const startWeekDateFormatted = formatDateForRange(startWeekDate);
+        endWeekDate.setDate(startWeekDate.getDate() + 6);
+        endWeekDate.setHours(23);
+        endWeekDate.setMinutes(59);
+        endWeekDate.setSeconds(59);
+        const endWeekDateFormatted = formatDateForRange(endWeekDate);
+        currentTimeRange =  startWeekDateFormatted + '-' + endWeekDateFormatted;
+    }
+
+    // Now we have the right time ranges, we must replace the query params.
+    const defaultPrintCalendarUrl = new URL('$printableVersionUrl');
+    const defaultPrintCalendarParams = defaultPrintCalendarUrl.searchParams;
+    defaultPrintCalendarParams.forEach((value, key) => {
+      switch(key) {
+        case 'scheduleType':
+          defaultPrintCalendarParams.set('scheduleType', currentPrintview);
+          break;
+        case 'timeRange':
+            defaultPrintCalendarParams.set('timeRange', currentTimeRange);
+          break;
+        case 'dailyStartTime':
+            defaultPrintCalendarParams.set('dailyStartTime', dailyStartTime);
+          break;
+        default:
+          break;
+      }
+    });
+
+    // Now we have the right URL, make the print request.
+    window.open(defaultPrintCalendarUrl.href, '_blank');
+
+  }
 </script>
