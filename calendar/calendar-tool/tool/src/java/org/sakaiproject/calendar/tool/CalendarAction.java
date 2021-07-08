@@ -144,6 +144,11 @@ extends VelocityPortletStateAction
 	private static final String IMPORT_WIZARD_SELECT_TYPE_STATE = SELECT_TYPE_IMPORT_WIZARD_STATE;
 	private static final String STATE_SCHEDULE_IMPORT = "scheduleImport";
 	private static final String CALENDAR_INIT_PARAMETER = "calendar";
+	private static final String WEEK_VIEW = "week";
+	private static final String DAY_VIEW = "day";
+	private static final String MONTH_VIEW = "month";
+	private static final String LIST_VIEW = "list";
+
 	private static final int HOURS_PER_DAY = 24;
 	static int tempHours = ServerConfigurationService.getInt("calendar.hoursPerPage", 10);
 	private static final int NUMBER_HOURS_PER_PAGE = tempHours > 16 ? 16 : (tempHours < 8 ? 8 : tempHours);
@@ -2194,6 +2199,7 @@ extends VelocityPortletStateAction
    
 	// default calendar view property
 	private final static String PORTLET_CONFIG_DEFAULT_VIEW = "defaultCalendarView";
+	private final static String PORTLET_CONFIG_DEFAULT_SUBVIEW = "defaultCalendarSubview";
 	
 	private final static String PAGE_MAIN = "main";
 	private final static String PAGE_ADDFIELDS = "addFields";
@@ -2319,9 +2325,12 @@ extends VelocityPortletStateAction
 		
 		// get current state (view); if not set use tool default or default to calendar view
 		String stateName = state.getState();
-		if (StringUtils.isBlank(stateName)) {
-			stateName = ServerConfigurationService.getString("calendar.default.view", CALENDAR_INIT_PARAMETER);
-			state.setState(stateName);
+		if (StringUtils.isBlank(stateName)) { 
+			stateName = portlet.getPortletConfig().getInitParameter(PORTLET_CONFIG_DEFAULT_VIEW);
+			if (StringUtils.isBlank(stateName)) {
+				stateName = ServerConfigurationService.getString("calendar.default.view", CALENDAR_INIT_PARAMETER);
+				state.setState(stateName);
+			}
 		}
 
 		switch (stateName) {
@@ -2963,11 +2972,9 @@ extends VelocityPortletStateAction
 
 	}	 // buildDescriptionContext
 
-	protected boolean isDefaultView(CalendarActionState state, Placement currentPlacement)
-	{
+	protected boolean isDefaultView(CalendarActionState state, Placement currentPlacement) {
 		String currentView = state.getState();
-		String defaultView = currentPlacement.getPlacementConfig().getProperty( PORTLET_CONFIG_DEFAULT_VIEW);
-		
+		String defaultView = currentPlacement.getPlacementConfig().getProperty(PORTLET_CONFIG_DEFAULT_VIEW);
 		return StringUtils.equals(defaultView, currentView);
 	}
 
@@ -6496,16 +6503,31 @@ extends VelocityPortletStateAction
    
 	/** Set current calendar view as tool default
 	 **/
-	public void doDefaultview( RunData rundata, Context context )
-	{
+	public void doDefaultview( RunData rundata, Context context ) {
 		CalendarActionState state = (CalendarActionState)getState(context, rundata, CalendarActionState.class);
 		String view = state.getState();
 
 		// Basic data validation
-		if (StringUtils.equalsAny(view, "day", "week", "month", "year", "list"))
-		{
+		if (StringUtils.equalsAny(view, CALENDAR_INIT_PARAMETER, "list")) {
 			Placement placement = ToolManager.getCurrentPlacement();
-			placement.getPlacementConfig().setProperty( PORTLET_CONFIG_DEFAULT_VIEW, view );
+			log.debug("Setting default view to {}", view);
+			placement.getPlacementConfig().setProperty(PORTLET_CONFIG_DEFAULT_VIEW, view);
+			// The CALENDAR view is generic but also there could be a subview, week, month or day view.
+			String defaultCalendarView = rundata.getParameters().get("calendar_default_subview");
+			if (StringUtils.isNotBlank(defaultCalendarView)) {
+				String subView = WEEK_VIEW;
+				if (StringUtils.containsIgnoreCase(defaultCalendarView, LIST_VIEW)) {
+					subView = LIST_VIEW;
+				} else if (StringUtils.containsIgnoreCase(defaultCalendarView, MONTH_VIEW)) {
+					subView = MONTH_VIEW;
+				} else if (StringUtils.containsIgnoreCase(defaultCalendarView, DAY_VIEW)) {
+					subView = DAY_VIEW;
+				} else if (StringUtils.containsIgnoreCase(defaultCalendarView, WEEK_VIEW)) {
+					subView = WEEK_VIEW;
+				}
+				log.debug("Setting default subview to {}", subView);
+				placement.getPlacementConfig().setProperty(PORTLET_CONFIG_DEFAULT_SUBVIEW, subView);
+			}
 			saveOptions();
 		}
 	}
@@ -7061,6 +7083,7 @@ extends VelocityPortletStateAction
 		context.put("selectedView", rb.getString("java.bycalendar"));
 		
 		context.put("isDefaultView", isDefaultView(state, ToolManager.getCurrentPlacement()));
+		context.put("defaultSubview", ToolManager.getCurrentPlacement().getPlacementConfig().getProperty(PORTLET_CONFIG_DEFAULT_SUBVIEW));
 		context.put("isUpdater", SiteService.allowUpdateSite(ToolManager.getCurrentPlacement().getContext()));
 	} // buildCalendarContext
 
